@@ -10,7 +10,7 @@ public class AudioConverter {
     String[] codecNames = {"libmp3lame", "pcm_s16le", "aac", "flac"};
     String[] formatNames = {"mp3", "wav", "ipod", "flac"};
     int[] bitrates = {64000, 128000, 192000, 320000};
-    int[] sampleRates = {32000,44100, 48000, 96000};
+    int[] sampleRates = {32000, 44100, 48000, 96000};
     int[] channels = {1, 2};
     FileNameManager fileNameManager = new FileNameManager();
     public void convert(File sourceAudio, int Indexuse, int bitrateIndex, int sampleRateIndex, int channelIndex) {

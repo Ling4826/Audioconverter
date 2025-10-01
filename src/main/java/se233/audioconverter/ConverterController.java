@@ -14,9 +14,7 @@ import javafx.scene.layout.Priority;
 import se233.audioconverter.Converter.AudioConverter;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ConverterController {
 
@@ -31,8 +29,24 @@ public class ConverterController {
 
     private final ObservableList<String> formatOptions = FXCollections.observableArrayList("MP3", "WAV", "M4A", "FLAC");
     private final ObservableList<String> bitrateOptions = FXCollections.observableArrayList("64 kbps", "128 kbps", "192 kbps", "320 kbps");
-    private final ObservableList<String> sampleRateOptions = FXCollections.observableArrayList("32000","44100 Hz", "48000 Hz", "96000 Hz");
+    private final ObservableList<String> sampleRateOptions = FXCollections.observableArrayList("32000 Hz","44100 Hz", "48000 Hz", "96000 Hz");
     private final ObservableList<String> channelOptions = FXCollections.observableArrayList("Mono", "Stereo");
+
+    // Define valid bitrates per format
+    private final Map<String, List<String>> validBitrates = Map.of(
+            "MP3", Arrays.asList("64 kbps", "128 kbps", "192 kbps", "320 kbps"),
+            "WAV", Collections.emptyList(),
+            "M4A", Arrays.asList("96 kbps", "128 kbps", "192 kbps", "256 kbps"),
+            "FLAC", Collections.emptyList()
+    );
+
+    // Define valid sample rates per format
+    private final Map<String, List<String>> validSampleRates = Map.of(
+            "MP3", Arrays.asList("32000", "44100 Hz", "48000 Hz"),
+            "WAV", Arrays.asList("44100 Hz", "48000 Hz", "96000 Hz"),
+            "M4A", Arrays.asList("44100 Hz", "48000 Hz"),
+            "FLAC", Arrays.asList("44100 Hz", "48000 Hz", "96000 Hz", "192000 Hz")
+    );
 
     @FXML private ListView<File> fileListView;
     @FXML private Button convertButton;
@@ -44,14 +58,16 @@ public class ConverterController {
     @FXML
     public void initialize() {
         defaultFormatComboBox.setItems(formatOptions);
-        defaultBitrateComboBox.setItems(bitrateOptions);
-        defaultSampleRateComboBox.setItems(sampleRateOptions);
         defaultChannelsComboBox.setItems(channelOptions);
+        // Instead of setting fixed bitrate/sampleRate, update based on format
+        updateDependentOptions("MP3", defaultBitrateComboBox, defaultSampleRateComboBox);
 
         defaultFormatComboBox.getSelectionModel().selectFirst();
-        defaultBitrateComboBox.getSelectionModel().select(1);
-        defaultSampleRateComboBox.getSelectionModel().selectFirst();
         defaultChannelsComboBox.getSelectionModel().select(1);
+        // Listen to format changes for defaults
+        defaultFormatComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
+            updateDependentOptions(newVal, defaultBitrateComboBox, defaultSampleRateComboBox);
+        });
 
         fileListView.setCellFactory(listView -> new ListCell<File>() {
             private final HBox hbox = new HBox(10);
@@ -66,7 +82,11 @@ public class ConverterController {
                 label.setMaxWidth(Double.MAX_VALUE);
                 hbox.getChildren().addAll(label, formatBox, bitrateBox, sampleRateBox, channelsBox);
 
-                formatBox.valueProperty().addListener((obs, oldVal, newVal) -> updateSettings(fs -> fs.format.set(newVal)));
+                // formatBox updates dependent options
+                formatBox.valueProperty().addListener((obs, oldVal, newVal) -> {
+                    updateDependentOptions(newVal, bitrateBox, sampleRateBox);
+                    updateSettings(fs -> fs.format.set(newVal));
+                });
                 bitrateBox.valueProperty().addListener((obs, oldVal, newVal) -> updateSettings(fs -> fs.bitrate.set(newVal)));
                 sampleRateBox.valueProperty().addListener((obs, oldVal, newVal) -> updateSettings(fs -> fs.sampleRate.set(newVal)));
                 channelsBox.valueProperty().addListener((obs, oldVal, newVal) -> updateSettings(fs -> fs.channels.set(newVal)));
@@ -91,6 +111,9 @@ public class ConverterController {
                     label.setText(file.getName());
                     FileSettings settings = fileSettingsMap.get(file);
 
+                    // make sure per-row bitrate/sampleRate match format
+                    updateDependentOptions(settings.format.get(), bitrateBox, sampleRateBox);
+
                     // --- KEY CHANGE: Manually set the value, don't bind ---
                     formatBox.setValue(settings.format.get());
                     bitrateBox.setValue(settings.bitrate.get());
@@ -105,7 +128,27 @@ public class ConverterController {
         setupDragAndDrop();
     }
 
-    // setupDragAndDrop and handleConvertButtonAction remain the same
+    // helper to update options based on selected format
+    private void updateDependentOptions(String format, ComboBox<String> bitrateBox, ComboBox<String> sampleRateBox) {
+        // Bitrates
+        List<String> bitrates = validBitrates.getOrDefault(format, Collections.emptyList());
+        bitrateBox.setItems(FXCollections.observableArrayList(bitrates));
+        if (!bitrates.isEmpty()) {
+            bitrateBox.getSelectionModel().selectFirst();
+        } else {
+            bitrateBox.getSelectionModel().clearSelection();
+        }
+
+        // Sample rates
+        List<String> rates = validSampleRates.getOrDefault(format, Collections.emptyList());
+        sampleRateBox.setItems(FXCollections.observableArrayList(rates));
+        if (!rates.isEmpty()) {
+            sampleRateBox.getSelectionModel().selectFirst();
+        } else {
+            sampleRateBox.getSelectionModel().clearSelection();
+        }
+    }
+
     private void setupDragAndDrop() {
         fileListView.setOnDragOver(event -> {
             if (event.getGestureSource() != fileListView && event.getDragboard().hasFiles()) {
