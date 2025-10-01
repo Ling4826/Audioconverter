@@ -4,7 +4,6 @@ import ws.schild.jave.Encoder;
 import ws.schild.jave.MultimediaObject;
 import ws.schild.jave.encode.AudioAttributes;
 import ws.schild.jave.encode.EncodingAttributes;
-
 import java.io.File;
 
 public class AudioConverter {

@@ -181,7 +181,6 @@ public class ConverterController {
 
             Platform.runLater(() -> {
                 System.out.println("--- All Conversions Finished ---");
-                // Optionally, show a success alert
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
                 alert.setTitle("Conversion Complete");
                 alert.setHeaderText("All tasks have been processed.");
