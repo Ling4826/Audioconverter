@@ -9,33 +9,31 @@ import java.io.File;
 public class AudioConverter {
     String[] codecNames = {"libmp3lame", "pcm_s16le", "aac", "flac"};
     String[] formatNames = {"mp3", "wav", "ipod", "flac"};
-    int[] bitrates = {64000, 128000, 192000, 320000};
-    int[] sampleRates = {32000, 44100, 48000, 96000};
     int[] channels = {1, 2};
     FileNameManager fileNameManager = new FileNameManager();
-    public void convert(File sourceAudio, int Indexuse, int bitrateIndex, int sampleRateIndex, int channelIndex) {
-        String targetFormat = formatNames[Indexuse];
-        int bitrate = this.bitrates[bitrateIndex];
-        int sampleRate = this.sampleRates[sampleRateIndex];
 
-        if (!areParametersValid(targetFormat, bitrate, sampleRate)) {
-            throw new IllegalArgumentException("Bitrate: " + bitrate + " bps, Sample Rate: " + sampleRate + " Hz."
+    public void convert(File sourceAudio, int formatIndex, int bitrateValue, int sampleRateValue, int channelIndex) {
+        String targetFormat = formatNames[formatIndex];
+
+        if (!areParametersValid(targetFormat, bitrateValue, sampleRateValue)) {
+            throw new IllegalArgumentException("Invalid settings for " + targetFormat +
+                    " - Bitrate: " + bitrateValue + " bps, Sample Rate: " + sampleRateValue + " Hz."
             );
         }
 
-        String sourceFormat = codecNames[Indexuse];
-        File targetAudio = fileNameManager.chname(sourceAudio.getPath(), Indexuse);
+        String sourceCodec = codecNames[formatIndex];
+        File targetAudio = fileNameManager.chname(sourceAudio.getPath(), formatIndex);
         System.out.println("Starting to convert file: " + sourceAudio.getName());
 
         try {
             AudioAttributes audio = new AudioAttributes();
-            audio.setCodec(sourceFormat);
+            audio.setCodec(sourceCodec);
             audio.setChannels(this.channels[channelIndex]);
-            audio.setSamplingRate(sampleRate);
+            audio.setSamplingRate(sampleRateValue);
 
 
             if (!targetFormat.equals("wav") && !targetFormat.equals("flac")) {
-                audio.setBitRate(bitrate);
+                audio.setBitRate(bitrateValue);
             }
 
             EncodingAttributes attrs = new EncodingAttributes();
