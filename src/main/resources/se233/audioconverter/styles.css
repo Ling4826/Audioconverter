@@ -1,0 +1,36 @@
+/* --- Styles for new buttons --- */
+
+/* Style for Delete button (✕) in each row */
+.delete-button {
+    -fx-background-color: #5C73B4; /* A darker, less prominent color */
+    -fx-text-fill: #EAEAEA;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 20px; /* Make it a circle */
+    -fx-padding: 0;
+    -fx-min-width: 28px;
+    -fx-min-height: 28px;
+    -fx-pref-width: 28px;
+    -fx-pref-height: 28px;
+}
+.delete-button:hover {
+    -fx-background-color: #E53935; /* Red on hover */
+    -fx-text-fill: white;
+    -fx-cursor: hand;
+}
+
+
+/* Style for secondary buttons (Add Files, Clear All) */
+.secondary-button {
+    -fx-background-color: #4F5D75;
+    -fx-text-fill: #EAEAEA;
+    -fx-font-size: 14px;
+    -fx-background-radius: 8px;
+    -fx-border-color: #7B68EE;
+    -fx-border-radius: 8px;
+    -fx-padding: 8px 15px;
+}
+.secondary-button:hover {
+    -fx-background-color: #5C73B4;
+    -fx-cursor: hand;
+}

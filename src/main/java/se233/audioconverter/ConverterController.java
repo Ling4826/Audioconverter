@@ -1,24 +1,36 @@
 package se233.audioconverter;
 
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.stage.FileChooser;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+import javafx.util.Duration;
 import se233.audioconverter.Converter.AudioConverter;
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class ConverterController {
 
+    // ... (คลาส FileSettings และ field declarations อื่นๆ เหมือนเดิม) ...
     private static class FileSettings {
         StringProperty format = new SimpleStringProperty();
         StringProperty bitrate = new SimpleStringProperty();
@@ -29,8 +41,6 @@ public class ConverterController {
     private final Map<File, FileSettings> fileSettingsMap = new HashMap<>();
 
     private final ObservableList<String> formatOptions = FXCollections.observableArrayList("MP3", "WAV", "M4A", "FLAC");
-    private final ObservableList<String> bitrateOptions = FXCollections.observableArrayList("64 kbps", "128 kbps", "192 kbps", "320 kbps");
-    private final ObservableList<String> sampleRateOptions = FXCollections.observableArrayList("32000","44100 Hz", "48000 Hz", "96000 Hz");
     private final ObservableList<String> channelOptions = FXCollections.observableArrayList("Mono", "Stereo");
 
     @FXML private ListView<File> fileListView;
@@ -39,6 +49,9 @@ public class ConverterController {
     @FXML private ComboBox<String> defaultBitrateComboBox;
     @FXML private ComboBox<String> defaultSampleRateComboBox;
     @FXML private ComboBox<String> defaultChannelsComboBox;
+
+    @FXML private Button addFilesButton;
+    @FXML private Button clearAllButton;
 
     private ObservableList<String> getBitrateOptionsForFormat(String format) {
         ObservableList<String> options = FXCollections.observableArrayList();
@@ -50,7 +63,7 @@ public class ConverterController {
                 options.addAll("16-bit", "24-bit", "32-bit");
                 break;
             case "M4A":
-                options.addAll("64 kbps", "96 kbps", "128 kbps", "192 kbps", "256 kbps");
+                options.addAll("96 kbps", "128 kbps", "192 kbps", "256 kbps");
                 break;
             case "FLAC":
                 options.addAll("Lossless (Level 5)", "Lossless (Level 8)");
@@ -63,8 +76,10 @@ public class ConverterController {
         ObservableList<String> options = FXCollections.observableArrayList();
         switch (format) {
             case "MP3":
-            case "M4A":
                 options.addAll("32000 Hz", "44100 Hz", "48000 Hz");
+                break;
+            case "M4A":
+                options.addAll("44100 Hz", "48000 Hz");
                 break;
             case "WAV":
                 options.addAll("44100 Hz", "48000 Hz", "88200 Hz", "96000 Hz");
@@ -75,54 +90,60 @@ public class ConverterController {
         }
         return options;
     }
+
+
     @FXML
     public void initialize() {
         defaultFormatComboBox.setItems(formatOptions);
         defaultChannelsComboBox.setItems(channelOptions);
 
-
         defaultFormatComboBox.valueProperty().addListener((obs, oldFormat, newFormat) -> {
             if (newFormat != null) {
-
                 defaultBitrateComboBox.setItems(getBitrateOptionsForFormat(newFormat));
                 defaultSampleRateComboBox.setItems(getSampleRateOptionsForFormat(newFormat));
-
-
                 defaultBitrateComboBox.getSelectionModel().selectFirst();
                 defaultSampleRateComboBox.getSelectionModel().selectFirst();
             }
         });
 
-
         defaultFormatComboBox.getSelectionModel().selectFirst();
         defaultChannelsComboBox.getSelectionModel().select("Stereo");
 
         fileListView.setCellFactory(listView -> new ListCell<File>() {
-            private final HBox hbox = new HBox(10);
+            private final HBox hbox = new HBox(15);
             private final Label label = new Label();
             private final ComboBox<String> formatBox = new ComboBox<>(formatOptions);
             private final ComboBox<String> bitrateBox = new ComboBox<>();
             private final ComboBox<String> sampleRateBox = new ComboBox<>();
             private final ComboBox<String> channelsBox = new ComboBox<>(channelOptions);
+            private final Button deleteButton = new Button("✕");
+            private final Region spacer = new Region();
 
             {
-                HBox.setHgrow(label, Priority.ALWAYS);
+                HBox.setHgrow(spacer, Priority.ALWAYS);
                 label.setMaxWidth(Double.MAX_VALUE);
-                hbox.getChildren().addAll(label, formatBox, bitrateBox, sampleRateBox, channelsBox);
+                deleteButton.getStyleClass().add("delete-button");
+
+                hbox.setAlignment(Pos.CENTER_LEFT);
+                hbox.getChildren().addAll(label, spacer, formatBox, bitrateBox, sampleRateBox, channelsBox, deleteButton);
+
+                deleteButton.setOnAction(event -> {
+                    File item = getItem();
+                    if (item != null) {
+                        getListView().getItems().remove(item);
+                        fileSettingsMap.remove(item);
+                    }
+                });
 
                 formatBox.valueProperty().addListener((obs, oldFormat, newFormat) -> {
                     if (newFormat != null && getItem() != null) {
                         bitrateBox.setItems(getBitrateOptionsForFormat(newFormat));
                         sampleRateBox.setItems(getSampleRateOptionsForFormat(newFormat));
-
-
                         bitrateBox.getSelectionModel().selectFirst();
                         sampleRateBox.getSelectionModel().selectFirst();
-
                         updateSettings(fs -> fs.format.set(newFormat));
                     }
                 });
-
                 bitrateBox.valueProperty().addListener((obs, oldVal, newVal) -> updateSettings(fs -> fs.bitrate.set(newVal)));
                 sampleRateBox.valueProperty().addListener((obs, oldVal, newVal) -> updateSettings(fs -> fs.sampleRate.set(newVal)));
                 channelsBox.valueProperty().addListener((obs, oldVal, newVal) -> updateSettings(fs -> fs.channels.set(newVal)));
@@ -145,20 +166,16 @@ public class ConverterController {
                 } else {
                     label.setText(file.getName());
                     FileSettings settings = fileSettingsMap.get(file);
-
                     String currentFormat = settings.format.get();
                     bitrateBox.setItems(getBitrateOptionsForFormat(currentFormat));
                     sampleRateBox.setItems(getSampleRateOptionsForFormat(currentFormat));
-
                     formatBox.setValue(currentFormat);
                     bitrateBox.setValue(settings.bitrate.get());
                     sampleRateBox.setValue(settings.sampleRate.get());
                     channelsBox.setValue(settings.channels.get());
-
                     setGraphic(hbox);
                 }
             }
-
         });
 
         setupDragAndDrop();
@@ -176,28 +193,49 @@ public class ConverterController {
             Dragboard db = event.getDragboard();
             boolean success = false;
             if (db.hasFiles()) {
-                fileListView.getItems().clear();
-                fileSettingsMap.clear();
-
-                List<File> files = db.getFiles();
-
-                for (File file : files) {
-                    FileSettings settings = new FileSettings();
-                    settings.format.set(defaultFormatComboBox.getValue());
-                    settings.bitrate.set(defaultBitrateComboBox.getValue());
-                    settings.sampleRate.set(defaultSampleRateComboBox.getValue());
-                    settings.channels.set(defaultChannelsComboBox.getValue());
-
-                    fileSettingsMap.put(file, settings);
-                    fileListView.getItems().add(file);
-                }
+                addFilesToList(db.getFiles());
                 success = true;
             }
             event.setDropCompleted(success);
             event.consume();
         });
     }
+    private void addFilesToList(List<File> files) {
+        for (File file : files) {
+            // ป้องกันการเพิ่มไฟล์ซ้ำ
+            if (!fileSettingsMap.containsKey(file)) {
+                FileSettings settings = new FileSettings();
+                settings.format.set(defaultFormatComboBox.getValue());
+                settings.bitrate.set(defaultBitrateComboBox.getValue());
+                settings.sampleRate.set(defaultSampleRateComboBox.getValue());
+                settings.channels.set(defaultChannelsComboBox.getValue());
+                fileSettingsMap.put(file, settings);
+                fileListView.getItems().add(file);
+            }
+        }
+    }
 
+    // *** เมธอดใหม่: Logic ของปุ่ม "Add Files" ***
+    @FXML
+    protected void handleAddFilesAction() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Select Audio Files");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("Audio Files", "*.wav", "*.mp3", "*.flac", "*.m4a"),
+                new FileChooser.ExtensionFilter("All Files", "*.*")
+        );
+        List<File> selectedFiles = fileChooser.showOpenMultipleDialog(addFilesButton.getScene().getWindow());
+        if (selectedFiles != null) {
+            addFilesToList(selectedFiles);
+        }
+    }
+
+    // *** เมธอดใหม่: Logic ของปุ่ม "Clear All" ***
+    @FXML
+    protected void handleClearAllAction() {
+        fileListView.getItems().clear();
+        fileSettingsMap.clear();
+    }
 
     private int parseValue(String stringValue) {
         if (stringValue == null || stringValue.isEmpty()) {
@@ -214,7 +252,7 @@ public class ConverterController {
         return value;
     }
 
-
+    // ... (เมธอด handleConvertButtonAction และ showErrorAlert เหมือนเดิม) ...
     @FXML
     protected void handleConvertButtonAction() {
         if (fileListView.getItems().isEmpty()) {
@@ -222,42 +260,84 @@ public class ConverterController {
             return;
         }
 
+
+        Stage loadingStage = new Stage();
+        LoadingController loadingController = null;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("loading-view.fxml"));
+            Scene scene = new Scene(loader.load());
+
+            loadingStage.setScene(scene);
+            loadingStage.initStyle(StageStyle.UTILITY);
+            loadingStage.initModality(Modality.APPLICATION_MODAL);
+            loadingStage.setTitle("Processing...");
+            loadingStage.setResizable(false);
+
+            loadingController = loader.getController();
+            loadingStage.show();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+
+
         AudioConverter converter = new AudioConverter();
         System.out.println("--- Starting Conversion Batch ---");
 
+        final LoadingController finalLoadingController = loadingController;
 
         new Thread(() -> {
-            for (File file : fileListView.getItems()) {
-                try {
+            try {
+                int totalFiles = fileListView.getItems().size();
+                for (int i = 0; i < totalFiles; i++) {
+                    File file = fileListView.getItems().get(i);
+
+
+                    final int currentFileIndex = i;
+                    Platform.runLater(() -> {
+                        finalLoadingController.updateStatus("Converting: " + file.getName() + " (" + (currentFileIndex + 1) + "/" + totalFiles + ")");
+                        finalLoadingController.updateProgress((double) currentFileIndex / totalFiles);
+                    });
+                    // --------------------------------
 
                     FileSettings settings = fileSettingsMap.get(file);
                     String formatStr = settings.format.get();
-                    String bitrateStr = settings.bitrate.get();
-                    String sampleRateStr = settings.sampleRate.get();
-                    String channelsStr = settings.channels.get();
-
                     int formatIndex = formatOptions.indexOf(formatStr);
-                    int bitrateIndex = bitrateOptions.indexOf(bitrateStr);
-                    int sampleRateIndex = sampleRateOptions.indexOf(sampleRateStr);
-                    int channelIndex = channelOptions.indexOf(channelsStr);
+                    int bitrateValue = parseValue(settings.bitrate.get());
+                    int sampleRateValue = parseValue(settings.sampleRate.get());
+                    int channelIndex = channelOptions.indexOf(settings.channels.get());
 
-                    converter.convert(file, formatIndex, bitrateIndex, sampleRateIndex, channelIndex);
-
-                } catch (IllegalArgumentException e) {
-                    // This catches validation errors from the converter
-                    Platform.runLater(() -> showErrorAlert(file.getName(), e.getMessage()));
-                } catch (Exception e) {
-                    Platform.runLater(() -> showErrorAlert(file.getName(), "An unexpected error occurred during conversion."));
-                    e.printStackTrace();
+                    converter.convert(file, formatIndex, bitrateValue, sampleRateValue, channelIndex);
                 }
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    finalLoadingController.closeWindow();
+                    showErrorAlert("Conversion Error", "An unexpected error occurred during the batch conversion.");
+                });
+                e.printStackTrace();
+                return;
             }
 
             Platform.runLater(() -> {
-                System.out.println("--- All Conversions Finished ---");
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Conversion Complete");
-                alert.setHeaderText("All tasks have been processed.");
-                alert.showAndWait();
+                finalLoadingController.updateProgress(1.0); // ทำให้ Progress เต็ม 100%
+                finalLoadingController.updateStatus("Conversion complete!");
+
+
+                PauseTransition delay = new PauseTransition(Duration.seconds(1));
+                delay.setOnFinished(event -> {
+                    finalLoadingController.closeWindow();
+
+
+                    Platform.runLater(() -> {
+                        System.out.println("--- All Conversions Finished ---");
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setTitle("Conversion Complete");
+                        alert.setHeaderText("All tasks have been processed.");
+                        alert.showAndWait();
+                    });
+                });
+                delay.play();
             });
         }).start();
     }
@@ -269,4 +349,5 @@ public class ConverterController {
         alert.setContentText("Reason: " + message);
         alert.showAndWait();
     }
+
 }
