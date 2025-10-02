@@ -99,6 +99,7 @@ public class ConverterController {
             if (newFormat != null) {
                 defaultBitrateComboBox.setItems(getBitrateOptionsForFormat(newFormat));
                 defaultSampleRateComboBox.setItems(getSampleRateOptionsForFormat(newFormat));
+
                 defaultBitrateComboBox.getSelectionModel().selectFirst();
                 defaultSampleRateComboBox.getSelectionModel().selectFirst();
             }
@@ -180,6 +181,7 @@ public class ConverterController {
 
                     bitrateBox.setItems(getBitrateOptionsForFormat(currentFormat));
                     sampleRateBox.setItems(getSampleRateOptionsForFormat(currentFormat));
+
                     bitrateBox.setValue(settings.bitrate.get());
                     sampleRateBox.setValue(settings.sampleRate.get());
                     channelsBox.setValue(settings.channels.get());
@@ -215,18 +217,22 @@ public class ConverterController {
     }
     private void addFilesToList(List<File> files) {
         for (File file : files) {
-            if (!fileSettingsMap.containsKey(file)) {
-                System.out.println("DEBUGGING DEFAULTS: Format=" + defaultFormatComboBox.getValue() + ", Bitrate=" + defaultBitrateComboBox.getValue() + ", SampleRate=" + defaultSampleRateComboBox.getValue());
-                FileSettings settings = new FileSettings();
-
-                settings.format.set(defaultFormatComboBox.getValue());
-                settings.bitrate.set(defaultBitrateComboBox.getValue());
-                settings.sampleRate.set(defaultSampleRateComboBox.getValue());
-                settings.channels.set(defaultChannelsComboBox.getValue());
-
-                fileSettingsMap.put(file, settings);
-                fileListView.getItems().add(file);
+            // ลบไฟล์เดิมออกก่อน (ถ้ามี)
+            if (fileSettingsMap.containsKey(file)) {
+                fileListView.getItems().remove(file); // ลบจาก ListView
+                fileSettingsMap.remove(file);         // ลบจาก Map
             }
+
+            // สร้าง FileSettings ใหม่ด้วยค่า Default ล่าสุด
+            FileSettings settings = new FileSettings();
+            settings.format.set(defaultFormatComboBox.getValue());
+            settings.bitrate.set(defaultBitrateComboBox.getValue());
+            settings.sampleRate.set(defaultSampleRateComboBox.getValue());
+            settings.channels.set(defaultChannelsComboBox.getValue());
+
+            // เพิ่มกลับเข้าไป
+            fileSettingsMap.put(file, settings);
+            fileListView.getItems().add(file);
         }
     }
 
