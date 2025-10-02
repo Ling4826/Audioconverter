@@ -1,0 +1,57 @@
+/* --- Loading View Styles --- */
+.root {
+    -fx-background-color: linear-gradient(to bottom right, #2C2F33, #36393F);
+}
+
+.loading-title {
+    -fx-text-fill: #FFD700;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-font-family: "Comic Sans MS", "Segoe UI", sans-serif;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 5, 0.0, 0, 2);
+    -fx-alignment: center;
+}
+
+.status-label {
+    -fx-text-fill: #EAEAEA;
+    -fx-font-size: 14px;
+    -fx-font-family: "Comic Sans MS", "Segoe UI", sans-serif;
+    -fx-alignment: center;
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
+}
+
+.custom-progress {
+    -fx-progress-color: #7B68EE;
+    -fx-background-color: #4F5D75;
+    -fx-background-radius: 15px;
+    -fx-border-radius: 15px;
+    -fx-pref-height: 12px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0.0, 0, 1);
+}
+
+.custom-progress .bar {
+    -fx-background-color: linear-gradient(to right, #7B68EE, #9370DB);
+    -fx-background-radius: 15px;
+    -fx-border-radius: 15px;
+    -fx-transition: -fx-background-color 0.3s ease;
+}
+
+@keyframes spin {
+    from { -fx-rotate: 0deg; }
+    to { -fx-rotate: 360deg; }
+}
+
+#leftFace {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0.0, 0, 2);
+    -fx-translate-y: 0;
+    -fx-scale-x: 1;
+    -fx-scale-y: 1;
+}
+
+#rightFace {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 5, 0.0, 0, 2);
+    -fx-translate-y: 0;
+    -fx-scale-x: 1;
+    -fx-scale-y: 1;
+}

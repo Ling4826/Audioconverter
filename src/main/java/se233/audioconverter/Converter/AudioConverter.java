@@ -56,11 +56,11 @@ public class AudioConverter {
             return false;
         }
 
-        switch (formatName.toLowerCase()) {
+        switch (formatName) {
             case "mp3":
                 boolean isValidMp3SampleRate = (sampleRate == 32000 || sampleRate == 44100 || sampleRate == 48000);
                 boolean isValidMp3Bitrate = (bitrate >= 64000 && bitrate <= 320000);
-                System.out.println(isValidMp3SampleRate + " " + isValidMp3Bitrate);
+                System.out.println("MP3 Validation: " + isValidMp3SampleRate + " " + isValidMp3Bitrate);
                 return isValidMp3SampleRate && isValidMp3Bitrate;
 
             case "wav":

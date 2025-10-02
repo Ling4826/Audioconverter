@@ -12,7 +12,7 @@ public class HelloApplication extends Application {
     public void start(Stage stage) throws IOException {
         FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("converter-view.fxml"));
 
-        Scene scene = new Scene(fxmlLoader.load(), 800, 500);
+        Scene scene = new Scene(fxmlLoader.load(), 900, 500);
         stage.setTitle("Audio Converter");
         stage.setScene(scene);
         stage.show();

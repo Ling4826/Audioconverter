@@ -53,17 +53,17 @@ public class ConverterController {
 
     private ObservableList<String> getBitrateOptionsForFormat(String format) {
         ObservableList<String> options = FXCollections.observableArrayList();
-        switch (format) {
-            case "MP3":
+        switch (mapFormatForConverter(format)) { // ใช้ mapping ตรงนี้
+            case "mp3":
                 options.addAll("96 kbps", "128 kbps", "192 kbps", "256 kbps", "320 kbps");
                 break;
-            case "WAV":
+            case "wav":
                 options.addAll("16-bit", "24-bit", "32-bit");
                 break;
-            case "M4A":
+            case "ipod":
                 options.addAll("96 kbps", "128 kbps", "192 kbps", "256 kbps");
                 break;
-            case "FLAC":
+            case "flac":
                 options.addAll("Lossless (Level 5)", "Lossless (Level 8)");
                 break;
         }
@@ -72,23 +72,22 @@ public class ConverterController {
 
     private ObservableList<String> getSampleRateOptionsForFormat(String format) {
         ObservableList<String> options = FXCollections.observableArrayList();
-        switch (format) {
-            case "MP3":
+        switch (mapFormatForConverter(format)) { // ใช้ mapping ตรงนี้
+            case "mp3":
                 options.addAll("32000 Hz", "44100 Hz", "48000 Hz");
                 break;
-            case "M4A":
+            case "ipod":
                 options.addAll("44100 Hz", "48000 Hz");
                 break;
-            case "WAV":
+            case "wav":
                 options.addAll("44100 Hz", "48000 Hz", "88200 Hz", "96000 Hz");
                 break;
-            case "FLAC":
+            case "flac":
                 options.addAll("44100 Hz", "48000 Hz", "88200 Hz", "96000 Hz", "192000 Hz");
                 break;
         }
         return options;
     }
-
 
     @FXML
     public void initialize() {
@@ -215,22 +214,20 @@ public class ConverterController {
             event.consume();
         });
     }
+
     private void addFilesToList(List<File> files) {
         for (File file : files) {
-            // ลบไฟล์เดิมออกก่อน (ถ้ามี)
             if (fileSettingsMap.containsKey(file)) {
-                fileListView.getItems().remove(file); // ลบจาก ListView
-                fileSettingsMap.remove(file);         // ลบจาก Map
+                fileListView.getItems().remove(file);
+                fileSettingsMap.remove(file);
             }
 
-            // สร้าง FileSettings ใหม่ด้วยค่า Default ล่าสุด
             FileSettings settings = new FileSettings();
             settings.format.set(defaultFormatComboBox.getValue());
             settings.bitrate.set(defaultBitrateComboBox.getValue());
             settings.sampleRate.set(defaultSampleRateComboBox.getValue());
             settings.channels.set(defaultChannelsComboBox.getValue());
 
-            // เพิ่มกลับเข้าไป
             fileSettingsMap.put(file, settings);
             fileListView.getItems().add(file);
         }
@@ -256,19 +253,66 @@ public class ConverterController {
         fileSettingsMap.clear();
     }
 
-    private int parseValue(String stringValue) {
-        if (stringValue == null || stringValue.isEmpty()) {
+    private int parseBitrateValue(String bitrateString) {
+        if (bitrateString == null || bitrateString.isEmpty()) return 0;
+
+        if (bitrateString.contains("Lossless")) {
             return 0;
         }
-        String numericString = stringValue.replaceAll("[^\\d]", "");
-        if (numericString.isEmpty()) {
-            return 0;
-        }
-        int value = Integer.parseInt(numericString);
-        if (stringValue.contains("kbps")) {
+
+        String numeric = bitrateString.replaceAll("[^\\d]", "");
+        if (numeric.isEmpty()) return 0;
+
+        int value = Integer.parseInt(numeric);
+        if (bitrateString.contains("kbps")) {
             value *= 1000;
         }
         return value;
+    }
+
+    private int parseSampleRateValue(String sampleRateString) {
+        if (sampleRateString == null || sampleRateString.isEmpty()) return 0;
+
+        String numeric = sampleRateString.replaceAll("[^\\d]", "");
+        if (numeric.isEmpty()) return 0;
+
+        return Integer.parseInt(numeric);
+    }
+
+    private boolean isValidFormatSettings(String formatName, int sampleRate, int bitrate) {
+        switch (formatName) {
+            case "mp3":
+                boolean isValidMp3SampleRate = (sampleRate == 32000 || sampleRate == 44100 || sampleRate == 48000);
+                boolean isValidMp3Bitrate = (bitrate >= 64000 && bitrate <= 320000);
+                System.out.println("MP3 Validation: " + isValidMp3SampleRate + " " + isValidMp3Bitrate);
+                return isValidMp3SampleRate && isValidMp3Bitrate;
+
+            case "wav":
+                boolean isValidWavSampleRate = (sampleRate == 44100 || sampleRate == 48000 || sampleRate == 96000);
+                return isValidWavSampleRate;
+
+            case "ipod":
+                boolean isValidAacSampleRate = (sampleRate == 44100 || sampleRate == 48000);
+                boolean isValidAacBitrate = (bitrate >= 96000 && bitrate <= 256000);
+                return isValidAacSampleRate && isValidAacBitrate;
+
+            case "flac":
+                boolean isValidFlacSampleRate = (sampleRate == 44100 || sampleRate == 48000 || sampleRate == 96000 || sampleRate == 192000);
+                return isValidFlacSampleRate;
+
+            default:
+                return false;
+        }
+    }
+
+    private String mapFormatForConverter(String uiFormat) {
+        switch (uiFormat.toUpperCase()) {
+            case "M4A": return "ipod";
+            case "MP3": return "mp3";
+            case "WAV": return "wav";
+            case "FLAC": return "flac";
+            default: return uiFormat.toLowerCase();
+        }
     }
 
     @FXML
@@ -278,12 +322,13 @@ public class ConverterController {
             return;
         }
 
-
         Stage loadingStage = new Stage();
         LoadingController loadingController = null;
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("loading-view.fxml"));
             Scene scene = new Scene(loader.load());
+
+            scene.getStylesheets().add(getClass().getResource("loading-view.css").toExternalForm());
 
             loadingStage.setScene(scene);
             loadingStage.initStyle(StageStyle.UTILITY);
@@ -292,13 +337,14 @@ public class ConverterController {
             loadingStage.setResizable(false);
 
             loadingController = loader.getController();
+            loadingController.startSpin();
+            loadingController.startShake();
             loadingStage.show();
 
         } catch (IOException e) {
             e.printStackTrace();
             return;
         }
-
 
         AudioConverter converter = new AudioConverter();
         System.out.println("--- Starting Conversion Batch ---");
@@ -310,27 +356,40 @@ public class ConverterController {
                 int totalFiles = fileListView.getItems().size();
                 for (int i = 0; i < totalFiles; i++) {
                     File file = fileListView.getItems().get(i);
-
-
                     final int currentFileIndex = i;
+
                     Platform.runLater(() -> {
                         finalLoadingController.updateStatus("Converting: " + file.getName() + " (" + (currentFileIndex + 1) + "/" + totalFiles + ")");
                         finalLoadingController.updateProgress((double) currentFileIndex / totalFiles);
                     });
-                    // --------------------------------
 
                     FileSettings settings = fileSettingsMap.get(file);
                     String formatStr = settings.format.get();
                     int formatIndex = formatOptions.indexOf(formatStr);
-                    int bitrateValue = parseValue(settings.bitrate.get());
-                    int sampleRateValue = parseValue(settings.sampleRate.get());
+
+                    int bitrateValue = parseBitrateValue(settings.bitrate.get());
+                    int sampleRateValue = parseSampleRateValue(settings.sampleRate.get());
                     int channelIndex = channelOptions.indexOf(settings.channels.get());
+
+                    String formatForValidation = mapFormatForConverter(formatStr);
+
+                    if (!isValidFormatSettings(formatForValidation, sampleRateValue, bitrateValue)) {
+                        Platform.runLater(() -> {
+                            finalLoadingController.closeWindow();
+                            finalLoadingController.stopSpin();
+                            finalLoadingController.stopShake();
+                            showErrorAlert(file.getName(), "Invalid settings for format: " + formatStr);
+                        });
+                        return;
+                    }
 
                     converter.convert(file, formatIndex, bitrateValue, sampleRateValue, channelIndex);
                 }
             } catch (Exception e) {
                 Platform.runLater(() -> {
                     finalLoadingController.closeWindow();
+                    finalLoadingController.stopSpin();
+                    finalLoadingController.stopShake();
                     showErrorAlert("Conversion Error", "An unexpected error occurred during the batch conversion.");
                 });
                 e.printStackTrace();
@@ -339,19 +398,21 @@ public class ConverterController {
 
             Platform.runLater(() -> {
                 finalLoadingController.updateProgress(1.0);
-                finalLoadingController.updateStatus("Conversion complete!");
+                finalLoadingController.updateStatus("✅ Conversion completed!");
 
+                finalLoadingController.stopSpin();
+                finalLoadingController.stopShake();
 
                 PauseTransition delay = new PauseTransition(Duration.seconds(1));
                 delay.setOnFinished(event -> {
                     finalLoadingController.closeWindow();
 
-
                     Platform.runLater(() -> {
                         System.out.println("--- All Conversions Finished ---");
                         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                        alert.setTitle("Conversion Complete");
-                        alert.setHeaderText("All tasks have been processed.");
+                        alert.setTitle("🎉 succeed!");
+                        alert.setHeaderText("Your file has been successfully converted.");
+                        alert.setContentText("Thank you for using our Audio Converter.!");
                         alert.showAndWait();
                     });
                 });
@@ -367,5 +428,4 @@ public class ConverterController {
         alert.setContentText("Reason: " + message);
         alert.showAndWait();
     }
-
 }
