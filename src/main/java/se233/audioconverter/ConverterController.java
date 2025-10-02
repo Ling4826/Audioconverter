@@ -29,8 +29,6 @@ import java.util.List;
 import java.util.Map;
 
 public class ConverterController {
-
-    // ... (คลาส FileSettings และ field declarations อื่นๆ เหมือนเดิม) ...
     private static class FileSettings {
         StringProperty format = new SimpleStringProperty();
         StringProperty bitrate = new SimpleStringProperty();
@@ -123,7 +121,6 @@ public class ConverterController {
                 HBox.setHgrow(spacer, Priority.ALWAYS);
                 label.setMaxWidth(Double.MAX_VALUE);
                 deleteButton.getStyleClass().add("delete-button");
-
                 hbox.setAlignment(Pos.CENTER_LEFT);
                 hbox.getChildren().addAll(label, spacer, formatBox, bitrateBox, sampleRateBox, channelsBox, deleteButton);
 
@@ -137,10 +134,23 @@ public class ConverterController {
 
                 formatBox.valueProperty().addListener((obs, oldFormat, newFormat) -> {
                     if (newFormat != null && getItem() != null) {
-                        bitrateBox.setItems(getBitrateOptionsForFormat(newFormat));
-                        sampleRateBox.setItems(getSampleRateOptionsForFormat(newFormat));
-                        bitrateBox.getSelectionModel().selectFirst();
-                        sampleRateBox.getSelectionModel().selectFirst();
+                        String currentBitrate = bitrateBox.getValue();
+                        ObservableList<String> newBitrateOptions = getBitrateOptionsForFormat(newFormat);
+                        bitrateBox.setItems(newBitrateOptions);
+                        if (currentBitrate != null && newBitrateOptions.contains(currentBitrate)) {
+                            bitrateBox.setValue(currentBitrate);
+                        } else {
+                            bitrateBox.getSelectionModel().selectFirst();
+                        }
+
+                        String currentSampleRate = sampleRateBox.getValue();
+                        ObservableList<String> newSampleRateOptions = getSampleRateOptionsForFormat(newFormat);
+                        sampleRateBox.setItems(newSampleRateOptions);
+                        if (currentSampleRate != null && newSampleRateOptions.contains(currentSampleRate)) {
+                            sampleRateBox.setValue(currentSampleRate);
+                        } else {
+                            sampleRateBox.getSelectionModel().selectFirst();
+                        }
                         updateSettings(fs -> fs.format.set(newFormat));
                     }
                 });
@@ -167,12 +177,15 @@ public class ConverterController {
                     label.setText(file.getName());
                     FileSettings settings = fileSettingsMap.get(file);
                     String currentFormat = settings.format.get();
+
                     bitrateBox.setItems(getBitrateOptionsForFormat(currentFormat));
                     sampleRateBox.setItems(getSampleRateOptionsForFormat(currentFormat));
-                    formatBox.setValue(currentFormat);
                     bitrateBox.setValue(settings.bitrate.get());
                     sampleRateBox.setValue(settings.sampleRate.get());
                     channelsBox.setValue(settings.channels.get());
+
+                    formatBox.setValue(currentFormat);
+
                     setGraphic(hbox);
                 }
             }
@@ -202,20 +215,21 @@ public class ConverterController {
     }
     private void addFilesToList(List<File> files) {
         for (File file : files) {
-            // ป้องกันการเพิ่มไฟล์ซ้ำ
             if (!fileSettingsMap.containsKey(file)) {
+                System.out.println("DEBUGGING DEFAULTS: Format=" + defaultFormatComboBox.getValue() + ", Bitrate=" + defaultBitrateComboBox.getValue() + ", SampleRate=" + defaultSampleRateComboBox.getValue());
                 FileSettings settings = new FileSettings();
+
                 settings.format.set(defaultFormatComboBox.getValue());
                 settings.bitrate.set(defaultBitrateComboBox.getValue());
                 settings.sampleRate.set(defaultSampleRateComboBox.getValue());
                 settings.channels.set(defaultChannelsComboBox.getValue());
+
                 fileSettingsMap.put(file, settings);
                 fileListView.getItems().add(file);
             }
         }
     }
 
-    // *** เมธอดใหม่: Logic ของปุ่ม "Add Files" ***
     @FXML
     protected void handleAddFilesAction() {
         FileChooser fileChooser = new FileChooser();
@@ -230,7 +244,6 @@ public class ConverterController {
         }
     }
 
-    // *** เมธอดใหม่: Logic ของปุ่ม "Clear All" ***
     @FXML
     protected void handleClearAllAction() {
         fileListView.getItems().clear();
@@ -252,7 +265,6 @@ public class ConverterController {
         return value;
     }
 
-    // ... (เมธอด handleConvertButtonAction และ showErrorAlert เหมือนเดิม) ...
     @FXML
     protected void handleConvertButtonAction() {
         if (fileListView.getItems().isEmpty()) {
@@ -320,7 +332,7 @@ public class ConverterController {
             }
 
             Platform.runLater(() -> {
-                finalLoadingController.updateProgress(1.0); // ทำให้ Progress เต็ม 100%
+                finalLoadingController.updateProgress(1.0);
                 finalLoadingController.updateStatus("Conversion complete!");
 
 
