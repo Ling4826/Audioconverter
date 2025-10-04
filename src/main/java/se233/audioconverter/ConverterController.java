@@ -13,9 +13,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
+import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -27,6 +25,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static se233.audioconverter.YoutubeToMp3RapidApiUtil.*;
 
 public class ConverterController {
     private static class FileSettings {
@@ -50,6 +50,14 @@ public class ConverterController {
 
     @FXML private Button addFilesButton;
     @FXML private Button clearAllButton;
+    @FXML private StackPane mainStackPane;
+    @FXML private VBox converterPane;
+    @FXML private VBox youtubePane;
+    @FXML private ToggleGroup modeToggleGroup;
+    @FXML private ToggleButton converterModeButton;
+    @FXML private ToggleButton youtubeModeButton;
+    @FXML private TextField youtubeUrlField;
+    @FXML private Button youtubeDownloadButton;
 
     private ObservableList<String> getBitrateOptionsForFormat(String format) {
         ObservableList<String> options = FXCollections.observableArrayList();
@@ -106,7 +114,22 @@ public class ConverterController {
 
         defaultFormatComboBox.getSelectionModel().selectFirst();
         defaultChannelsComboBox.getSelectionModel().select("Stereo");
-
+        modeToggleGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
+            if (newToggle == null) {
+                // ถ้าไม่มีปุ่มไหนถูกเลือกเลย ให้บังคับเลือกปุ่มเดิมกลับมา
+                oldToggle.setSelected(true);
+            } else if (newToggle == converterModeButton) {
+                // แสดงหน้า Converter ซ่อนหน้า YouTube
+                converterPane.setVisible(true);
+                youtubePane.setVisible(false);
+            } else if (newToggle == youtubeModeButton) {
+                // แสดงหน้า YouTube ซ่อนหน้า Converter
+                converterPane.setVisible(false);
+                youtubePane.setVisible(true);
+            }
+        });
+        converterPane.setVisible(true);
+        youtubePane.setVisible(false);
         fileListView.setCellFactory(listView -> new ListCell<File>() {
             private final HBox hbox = new HBox(15);
             private final Label label = new Label();
@@ -318,25 +341,25 @@ public class ConverterController {
     @FXML
     protected void handleConvertButtonAction() {
         if (fileListView.getItems().isEmpty()) {
-            System.out.println("Please drop files first!");
+            showErrorAlert("No Files", "Please add files to convert.");
             return;
         }
 
         Stage loadingStage = new Stage();
-        LoadingController loadingController = null;
+        LoadingController loadingController;
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("loading-view.fxml"));
             Scene scene = new Scene(loader.load());
-
             scene.getStylesheets().add(getClass().getResource("loading-view.css").toExternalForm());
 
             loadingStage.setScene(scene);
             loadingStage.initStyle(StageStyle.UTILITY);
             loadingStage.initModality(Modality.APPLICATION_MODAL);
-            loadingStage.setTitle("Processing...");
+            loadingStage.setTitle("Converting...");
             loadingStage.setResizable(false);
 
             loadingController = loader.getController();
+            loadingController.setTitle("⏳ Converting files... Please wait.");
             loadingController.startSpin();
             loadingController.startShake();
             loadingStage.show();
@@ -346,10 +369,8 @@ public class ConverterController {
             return;
         }
 
-        AudioConverter converter = new AudioConverter();
-        System.out.println("--- Starting Conversion Batch ---");
-
         final LoadingController finalLoadingController = loadingController;
+        AudioConverter converter = new AudioConverter();
 
         new Thread(() -> {
             try {
@@ -366,30 +387,23 @@ public class ConverterController {
                     FileSettings settings = fileSettingsMap.get(file);
                     String formatStr = settings.format.get();
                     int formatIndex = formatOptions.indexOf(formatStr);
-
                     int bitrateValue = parseBitrateValue(settings.bitrate.get());
                     int sampleRateValue = parseSampleRateValue(settings.sampleRate.get());
                     int channelIndex = channelOptions.indexOf(settings.channels.get());
-
                     String formatForValidation = mapFormatForConverter(formatStr);
 
                     if (!isValidFormatSettings(formatForValidation, sampleRateValue, bitrateValue)) {
                         Platform.runLater(() -> {
                             finalLoadingController.closeWindow();
-                            finalLoadingController.stopSpin();
-                            finalLoadingController.stopShake();
-                            showErrorAlert(file.getName(), "Invalid settings for format: " + formatStr);
+                            showErrorAlert("Invalid Settings", "Invalid settings for file: " + file.getName());
                         });
                         return;
                     }
-
                     converter.convert(file, formatIndex, bitrateValue, sampleRateValue, channelIndex);
                 }
             } catch (Exception e) {
                 Platform.runLater(() -> {
                     finalLoadingController.closeWindow();
-                    finalLoadingController.stopSpin();
-                    finalLoadingController.stopShake();
                     showErrorAlert("Conversion Error", "An unexpected error occurred during the batch conversion.");
                 });
                 e.printStackTrace();
@@ -399,24 +413,23 @@ public class ConverterController {
             Platform.runLater(() -> {
                 finalLoadingController.updateProgress(1.0);
                 finalLoadingController.updateStatus("✅ Conversion completed!");
-
                 finalLoadingController.stopSpin();
                 finalLoadingController.stopShake();
 
-                PauseTransition delay = new PauseTransition(Duration.seconds(1));
+                PauseTransition delay = new PauseTransition(Duration.seconds(1.5));
                 delay.setOnFinished(event -> {
                     finalLoadingController.closeWindow();
 
                     Platform.runLater(() -> {
-                        System.out.println("--- All Conversions Finished ---");
                         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                        alert.setTitle("🎉 succeed!");
-                        alert.setHeaderText("Your file has been successfully converted.");
-                        alert.setContentText("Thank you for using our Audio Converter.!");
+                        alert.setTitle("🎉 Success!");
+                        alert.setHeaderText("All files have been successfully converted.");
+                        alert.setContentText("Thank you for using our Audio Converter!");
                         alert.showAndWait();
                     });
                 });
                 delay.play();
+
             });
         }).start();
     }
@@ -426,6 +439,85 @@ public class ConverterController {
         alert.setTitle("Conversion Error");
         alert.setHeaderText("Failed to convert: " + fileName);
         alert.setContentText("Reason: " + message);
+        alert.showAndWait();
+    }
+
+    @FXML
+    protected void handleYoutubeDownloadAction() {
+        String userUrl = youtubeUrlField.getText();
+        if (userUrl == null || userUrl.trim().isEmpty()) {
+            showErrorAlert("Invalid URL", "Please enter a YouTube URL.");
+            return;
+        }
+
+        youtubeDownloadButton.setDisable(true);
+        youtubeDownloadButton.setText("Processing...");
+
+        new Thread(() -> {
+            try {
+                String videoId = extractVideoId(userUrl);
+                if (videoId == null) {
+                    Platform.runLater(() -> showErrorAlert("Error", "Could not find a valid video ID in the URL."));
+                    return;
+                }
+
+                String mp3Url = fetchMp3LinkFromApi(videoId);
+                if (mp3Url == null) {
+                    Platform.runLater(() -> showErrorAlert("API Error", "Failed to get the MP3 link from the API."));
+                    return;
+                }
+
+                final Stage[] loadingStage = new Stage[1];
+
+                Platform.runLater(() -> {
+                    FileChooser fileChooser = new FileChooser();
+                    fileChooser.setTitle("Save MP3 File");
+                    fileChooser.setInitialFileName(videoId + ".mp3");
+                    fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("MP3 Audio", "*.mp3"));
+                    File file = fileChooser.showSaveDialog(youtubePane.getScene().getWindow());
+
+                    if (file != null) {
+                        loadingStage[0] = new Stage();
+                        FXMLLoader loader = new FXMLLoader(getClass().getResource("loading-view.fxml"));
+                        try {
+                            Scene scene = new Scene(loader.load());
+                            scene.getStylesheets().add(getClass().getResource("loading-view.css").toExternalForm());
+                            loadingStage[0].setScene(scene);
+                            loadingStage[0].initStyle(StageStyle.UTILITY);
+                            loadingStage[0].initModality(Modality.APPLICATION_MODAL);
+                            loadingStage[0].setTitle("Loading...");
+                            loadingStage[0].setResizable(false);
+                            loadingStage[0].show();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        new Thread(() -> {
+                            boolean success = downloadMp3(mp3Url, file.getAbsolutePath());
+                            Platform.runLater(() -> {
+                                if (loadingStage[0] != null) loadingStage[0].close();
+                                if (success) {
+                                    showSuccessAlert("Download Complete", "Successfully downloaded MP3 to:\n" + file.getAbsolutePath());
+                                } else {
+                                    showErrorAlert("Download Failed", "An error occurred while downloading the file.");
+                                }
+                            });
+                        }).start();
+                    }
+                });
+            } finally {
+                Platform.runLater(() -> {
+                    youtubeDownloadButton.setDisable(false);
+                    youtubeDownloadButton.setText("Download MP3");
+                });
+            }
+        }).start();
+    }
+    private void showSuccessAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
         alert.showAndWait();
     }
 }

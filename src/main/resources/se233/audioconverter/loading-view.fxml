@@ -13,7 +13,7 @@
             xmlns:fx="http://javafx.com/fxml/1" fx:controller="se233.audioconverter.LoadingController">
     <children>
 
-        <Label text="⏳ Converting files... Don't go anywhere yet!"
+        <Label fx:id="titleLabel" text="⏳ Converting files... Don't go anywhere yet!"
                styleClass="loading-title"
                AnchorPane.leftAnchor="25.0" AnchorPane.rightAnchor="25.0"
                AnchorPane.topAnchor="20.0" />

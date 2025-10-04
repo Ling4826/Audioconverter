@@ -1,19 +1,17 @@
-/* --- Global Styles & Modern Color Palette --- */
+
 .root {
-    /* Defining colors as variables for easy changes */
-    -fx-primary-color: #7B68EE; /* A nice shade of purple */
+    -fx-primary-color: #7B68EE;
     -fx-primary-color-darker: #6A5ACD;
     -fx-primary-color-brighter: #9370DB;
-    -fx-background-dark: #2C2F33; /* Dark background */
-    -fx-background-light: #36393F; /* Lighter elements */
+    -fx-background-dark: #2C2F33;
+    -fx-background-light: #36393F;
     -fx-text-color: #EAEAEA;
     -fx-text-color-muted: #B0B0B0;
 
     -fx-background-color: -fx-background-dark;
-    -fx-font-family: "Segoe UI", "Tahoma", sans-serif; /* Cleaner font */
+    -fx-font-family: "Segoe UI", "Tahoma", sans-serif;
 }
 
-/* --- Labels --- */
 .label {
     -fx-text-fill: -fx-text-color-muted;
     -fx-font-size: 13px;
@@ -26,14 +24,13 @@
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 10, 0.0, 0, 1);
 }
 
-/* --- ComboBox Styles --- */
 .combo-box {
     -fx-background-color: -fx-background-light;
     -fx-border-color: derive(-fx-background-light, 20%);
     -fx-border-radius: 8px;
     -fx-background-radius: 8px;
     -fx-text-fill: -fx-text-color;
-    -fx-prompt-text-fill: -fx-text-color; /* Text color when nothing is selected */
+    -fx-prompt-text-fill: -fx-text-color;
 }
 .combo-box .list-cell {
     -fx-text-fill: -fx-text-color;
@@ -52,30 +49,27 @@
     -fx-border-color: -fx-primary-color;
 }
 
-/* --- ListView Styles --- */
 .list-view {
     -fx-background-color: -fx-background-light;
     -fx-border-color: transparent;
     -fx-border-radius: 8px;
     -fx-background-insets: 0;
     -fx-background-radius: 8px;
-    /* Adding a subtle shadow to make it "pop" */
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 15, 0.0, 0, 2);
 }
 
 .list-view .list-cell {
     -fx-background-color: transparent;
     -fx-text-fill: -fx-text-color;
-    -fx-padding: 12px; /* Increased padding for more space */
+    -fx-padding: 12px;
     -fx-font-size: 14px;
     -fx-border-color: transparent;
     -fx-background-insets: 0;
-    -fx-background-radius: 6px; /* Rounded corners for cells */
+    -fx-background-radius: 6px;
 }
 
 .list-view .list-cell:filled:hover {
     -fx-background-color: derive(-fx-background-light, 20%);
-    /* Adding smooth transition on hover */
     -fx-transition: -fx-background-color 0.2s ease-in-out;
 }
 
@@ -88,16 +82,14 @@
     -fx-text-fill: -fx-text-color-muted;
 }
 
-/* --- Button Styles --- */
 #convertButton {
     -fx-background-color: linear-gradient(to bottom, -fx-primary-color, -fx-primary-color-darker);
     -fx-text-fill: white;
     -fx-font-size: 16px;
     -fx-font-weight: bold;
-    -fx-background-radius: 50px; /* Fully rounded button */
+    -fx-background-radius: 50px;
     -fx-padding: 12px 25px;
     -fx-effect: dropshadow(gaussian, -fx-primary-color-brighter, 15, 0.0, 0, 0);
-    /* Smooth transition for hover effects */
     -fx-transition: all 0.2s ease-in-out;
 }
 
@@ -115,11 +107,11 @@
 }
 
 .delete-button {
-    -fx-background-color: #5C73B4; /* A darker, less prominent color */
+    -fx-background-color: #5C73B4;
     -fx-text-fill: #EAEAEA;
     -fx-font-size: 14px;
     -fx-font-weight: bold;
-    -fx-background-radius: 20px; /* Make it a circle */
+    -fx-background-radius: 20px;
     -fx-padding: 0;
     -fx-min-width: 28px;
     -fx-min-height: 28px;
@@ -127,13 +119,12 @@
     -fx-pref-height: 28px;
 }
 .delete-button:hover {
-    -fx-background-color: #E53935; /* Red on hover */
+    -fx-background-color: #E53935;
     -fx-text-fill: white;
     -fx-cursor: hand;
 }
 
 
-/* Style for secondary buttons (Add Files, Clear All) */
 .secondary-button {
     -fx-background-color: #4F5D75;
     -fx-text-fill: #EAEAEA;
@@ -147,3 +138,52 @@
     -fx-background-color: #5C73B4;
     -fx-cursor: hand;
 }
+
+
+.mode-selector .label {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+}
+
+.toggle-button {
+    -fx-background-color: -fx-background-light;
+    -fx-text-fill: -fx-text-color;
+    -fx-border-color: derive(-fx-background-light, 20%);
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-font-weight: bold;
+    -fx-padding: 8px 15px;
+    -fx-min-width: 180px;
+}
+
+.toggle-button:hover {
+    -fx-cursor: hand;
+    -fx-border-color: -fx-primary-color-brighter;
+}
+
+.toggle-button:selected {
+    -fx-background-color: -fx-primary-color;
+    -fx-text-fill: white;
+    -fx-border-color: -fx-primary-color-darker;
+}
+
+.mode-selector .toggle-button {
+    -fx-background-color: -fx-background-light;
+    -fx-text-fill: -fx-text-color-muted;
+    -fx-border-color: transparent;
+    -fx-font-size: 14px;
+    -fx-padding: 10px 20px;
+}
+
+.mode-selector .toggle-button:hover {
+    -fx-background-color: derive(-fx-background-light, 10%);
+    -fx-cursor: hand;
+}
+
+.mode-selector .toggle-button:selected {
+    -fx-background-color: -fx-primary-color;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+

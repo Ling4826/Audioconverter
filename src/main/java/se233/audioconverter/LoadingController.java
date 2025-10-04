@@ -16,7 +16,12 @@ public class LoadingController {
 
     @FXML
     private ProgressBar progressBar;
+    @FXML
+    private Label titleLabel;
 
+    public void setTitle(String title) {
+        titleLabel.setText(title);
+    }
 
     public void updateProgress(double progress) {
         progressBar.setProgress(progress);
